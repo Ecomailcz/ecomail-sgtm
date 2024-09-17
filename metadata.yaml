@@ -1,0 +1,5 @@
+homepage: "https://ecomail.cz"
+documentation: "https://github.com/Ecomailcz/ecomail-sgtm"
+versions:
+  - sha:c7eee35900a41206f0658a00a475cd0b3119d588
+    changeNotes:Add categories
