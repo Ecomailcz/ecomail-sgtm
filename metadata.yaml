@@ -1,5 +1,5 @@
 homepage: "https://ecomail.cz"
-documentation: "https://github.com/Ecomailcz/ecomail-sgtm"
+documentation: "https://support.ecomail.app/en/articles/10067902-ecomail-sgtm-tag"
 versions:
   - sha: 4061d8bbd7142123b1897c0ca42e5a63addff4a1
     changeNotes: Initial commit
