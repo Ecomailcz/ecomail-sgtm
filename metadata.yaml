@@ -1,5 +1,9 @@
 homepage: "https://ecomail.cz"
 documentation: "https://support.ecomail.app/en/articles/10067902-ecomail-sgtm-tag"
 versions:
+  # Latest version
+  - sha: 6336f3cc67eb1da600725ea07ced07ec9f12c033
+    changeNotes: Better email validation and change contact title
+  # Older versions
   - sha: 4061d8bbd7142123b1897c0ca42e5a63addff4a1
     changeNotes: Initial commit
