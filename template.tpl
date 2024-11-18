@@ -63,12 +63,12 @@ ___TEMPLATE_PARAMETERS___
 "displayValue": "Event"
 },
 {
-"value": "only_add_email",
-"displayValue": "Add only email"
+"value": "contact",
+"displayValue": "Contact"
 }
 ],
 "simpleValueType": true,
-"help": "You must set transaction, events or only_add_email"
+"help": "You must set transaction, events or contact"
 },
 {
 "type": "TEXT",
@@ -352,10 +352,21 @@ const testRegex = require('testRegex');
 
 //Check if there is an email in input data.
 const emailRegex = createRegex('@', 'i');
-if (emailRegex === null) return;
-if (testRegex(emailRegex, data.email) === false) {
+if (emailRegex === null) {
+logToConsole('Failed to create regex for email validation.');
+return;
+}
+
+if (!data.email) {
+logToConsole('No email provided in input data.');
 data.gtmOnFailure();
-return ;
+return;
+}
+
+if (testRegex(emailRegex, data.email) === false) {
+logToConsole('Invalid email: ' + data.email);
+data.gtmOnFailure();
+return;
 }
 
 //Setup basic array for POST request to Ecomail
@@ -477,7 +488,7 @@ var url_api_subscribe = 'https://api2.ecomailapp.cz/lists/'+encodeUri(data.email
 
 
 // Add or edit email contact in the list
-if (data.email_list_id && (data.request_type == 'only_add_email' || (data.request_type == 'transaction' && data.update_existing == true))) {
+if (data.email_list_id && (data.request_type == 'contact' || (data.request_type == 'transaction' && data.update_existing == true))) {
 var tags = [data.integration_name];
 
 if(data.newsletter_consent) {
