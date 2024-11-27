@@ -357,6 +357,16 @@ logToConsole('Failed to create regex for email validation.');
 return;
 }
 
+var email = data.email || data.e_mail || data.email_address;
+
+if (!email) {
+logToConsole("Error: No email found in data. Use email, e_mail or email_address");
+data.gtmOnFailure();
+return;
+}
+
+data.email = email;
+
 if (!data.email) {
 logToConsole('No email provided in input data.');
 data.gtmOnFailure();
