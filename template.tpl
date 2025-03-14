@@ -14,10 +14,12 @@ ___INFO___
 "version": 1,
 "securityGroups": [],
 "displayName": "Ecomail",
-"categories": ["EMAIL_MARKETING"],
+"categories": [
+"EMAIL_MARKETING"
+],
 "brand": {
-"id": "brand_dummy",
-"displayName": "Ecomail",
+"id": "github.com_Ecomailcz",
+"displayName": "Ecomail.cz",
 "thumbnail": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFoAAAA8CAYAAADmBa1FAAAACXBIWXMAACE4AAAhOAFFljFgAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAOHSURBVHgB7Zw9b9NAHId/d2cndpo0LyWl6VtoRCtVFHVAgs6sfAMW+AYwslE+ASMj9BOxMTBUYmBhshBLX+Lgf1JXbZXm8nL23dl+xigv1qPT+fHdKQwRr7+8/MjDwfsBQwMFymADBAPGvu3uh5/E1++vPvsu/xD8C70wRIFCuIC33GFHfU+ccYR4u94WeLbvwSszFKhBuECrK+DXOSKr73j02nC6qFZYIVsRsWTHu36pwW++wS8XshfFjeSu9MRQ9k343TeS7KMDD81ljoLZ8OsMzWgk8zHqxtp0nNHI3l5zUDAd1QcM9XU+VjIxcdjudUvobbgomEztIUO1PXkGkA7Z3uZI9OnvCxTchkZvbY0Ny0LGVHMDya4tcfw4PcfF5QAFo7Jobt4qi4lMfcdrN4vWjhmTb1JmSouite/PNxkzN1zc2rVK/mRTvq3siHvLYhJzxXIsu90SyAtxvs3L3J+k1j7cLeeitafJNxkLW6LWdgTLZP7RFFHf4ChXF58mlQxHyj8a4T9/nSMrzJpvMpQtaNAUcrhXhuvYf5OcJ99kKF05otZ+fmB3/s2bbzKUL9HZvNS6SL7JSGQt1MbWXjTfZCT2zTa1top8k5Hot8etbepSK00RzS2OpVbymxypPG2YuNSqOt9kpLZfRbLp4cYEksg3GaluDFJr07yts7WTyjcZqe/A0qavrtZOMt9kaNnq1tHaSeebDG2/nGZrp5FvMrT+eiy7004mftLMN+m1QDPU2k966o81xGWhYolTBcas2qts7ViyMOg5yahzXypaW1e+yTDugB219tFTf67W1plvMow8yUjHGmZtbd35JsPYK5ultU3INxlGX118hPi+1qYpotU1I99kGH+FlH8vojn7bmvHZVGyZHPB/KFwxc3W1rH6tihWnX6h/OPRhs1fPzSyLCZh2eUCjzouuhU3EMyuzV/rRBP1Em/sVFyULJJtpWjCEww7S/bItlY04fKRbI+bL9tq0QTJflwtBQ3X7GMN1ou+orHpO1gtmys7K6KHrJbNlZ0p0QTJ3vLMy7/MiSZMzL9MiiZMy7/MiiZMyr9Miyau8g+68y/zomN0519uRBM68y9XogmSve27SDv/cieaWHY50s6/XIom0s4/Eh0gp6SYfwHHgJ0gx8T5t1JK8ibJThwI5xj9S/p/xzdAfv8ys+NFKqKB/eesD4UEJLmPi+P/q6xjuZmK8TsAAAAASUVORK5CYII\u003d"
 },
 "description": "Send data to Ecomail via API",
@@ -52,7 +54,7 @@ ___TEMPLATE_PARAMETERS___
 "type": "SELECT",
 "name": "request_type",
 "displayName": "Request type",
-"macrosInSelect": true,
+"macrosInSelect": false,
 "selectItems": [
 {
 "value": "transaction",
@@ -139,61 +141,48 @@ ___TEMPLATE_PARAMETERS___
 "simpleValueType": true
 },
 {
-"type": "SELECT",
+"type": "TEXT",
+"name": "language",
+"displayName": "Language",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "custom_fields",
+"displayName": "Custom fields",
+"simpleValueType": true,
+"help": "JSON of custom fields. See: https://ecomailczv2.docs.apiary.io/#reference/lists/list-subscribe/add-new-subscriber-to-list"
+},
+{
+"type": "CHECKBOX",
 "name": "trigger_autoresponders",
-"displayName": "Trigger automations on subscribe",
-"macrosInSelect": true,
-"selectItems": [
-{
-"value": true,
-"displayValue": "True"
-},
-{
-"value": false,
-"displayValue": "False"
-}
-],
+"checkboxText": "Trigger autoresponders",
 "simpleValueType": true,
-"defaultValue": false
+"help": "Trigger automations on subscribe"
 },
 {
-"type": "SELECT",
+"type": "CHECKBOX",
 "name": "update_existing",
-"displayName": "Update an already existing subscriber",
-"macrosInSelect": true,
-"selectItems": [
-{
-"value": true,
-"displayValue": "True"
-},
-{
-"value": false,
-"displayValue": "False"
-}
-],
+"checkboxText": "Update existing",
 "simpleValueType": true,
-"defaultValue": false
+"help": "Update an already existing subscriber"
 },
 {
-"type": "SELECT",
+"type": "CHECKBOX",
 "name": "resubscribe",
-"displayName": "In case of unsubscribed status force resubscribe",
-"macrosInSelect": true,
-"selectItems": [
-{
-"value": true,
-"displayValue": "True"
+"checkboxText": "Resubscribe",
+"simpleValueType": true,
+"help": "Resubscribe unsubscribed subscribers"
 },
 {
-"value": false,
-"displayValue": "False"
-}
-],
+"type": "CHECKBOX",
+"name": "skip_confirmation",
+"checkboxText": "Skip confirmation",
 "simpleValueType": true,
-"defaultValue": false
+"help": "Skip DOI in Ecomail"
 }
 ],
-"help": "User data is not required. Required is only e-mail."
+"help": "User data object must contain email address."
 },
 {
 "type": "GROUP",
@@ -202,22 +191,46 @@ ___TEMPLATE_PARAMETERS___
 "groupStyle": "ZIPPY_CLOSED",
 "subParams": [
 {
-"type": "TEXT",
+"type": "SELECT",
 "name": "event_category",
 "displayName": "Category",
-"simpleValueType": true
+"macrosInSelect": false,
+"selectItems": [
+{
+"value": "ue",
+"displayValue": "ue"
+}
+],
+"simpleValueType": true,
+"notSetText": "Select category"
 },
 {
-"type": "TEXT",
+"type": "SELECT",
 "name": "event_action",
 "displayName": "Action",
-"simpleValueType": true
+"macrosInSelect": false,
+"selectItems": [
+{
+"value": "Basket",
+"displayValue": "Basket"
+}
+],
+"simpleValueType": true,
+"notSetText": "Select action"
 },
 {
-"type": "TEXT",
+"type": "SELECT",
 "name": "event_label",
 "displayName": "Label",
-"simpleValueType": true
+"macrosInSelect": false,
+"selectItems": [
+{
+"value": "Basket",
+"displayValue": "Basket"
+}
+],
+"simpleValueType": true,
+"notSetText": "Select label"
 },
 {
 "type": "TEXT",
@@ -294,6 +307,117 @@ ___TEMPLATE_PARAMETERS___
 ]
 },
 {
+"type": "GROUP",
+"name": "lists",
+"displayName": "Multistore lists definitions",
+"groupStyle": "ZIPPY_CLOSED",
+"subParams": [
+{
+"type": "TEXT",
+"name": "list_id_cs",
+"displayName": "List Id - Czech",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_en",
+"displayName": "List Id - English",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_sk",
+"displayName": "List Id - Slovakia",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_at",
+"displayName": "List Id - Austria",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_be",
+"displayName": "List Id - Belgium",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_ch",
+"displayName": "List Id - Switzerland",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_de",
+"displayName": "List Id - Germany",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_fr",
+"displayName": "List Id - France",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_hr",
+"displayName": "List Id - Croatia",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_hu",
+"displayName": "List Id - Hungary",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_it",
+"displayName": "List Id - Italy",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_nl",
+"displayName": "List Id - Netherlands",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_pl",
+"displayName": "List Id - Poland",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_ro",
+"displayName": "List Id - Romania",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_ru",
+"displayName": "List Id - Russia",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_sl",
+"displayName": "List Id - Slovenia",
+"simpleValueType": true
+},
+{
+"type": "TEXT",
+"name": "list_id_et",
+"displayName": "List Id - Estonia",
+"simpleValueType": true
+}
+],
+"help": "Specify which list from Ecomail corresponds to each language. Add a new mapping for every list-language pair."
+},
+{
 "type": "PARAM_TABLE",
 "name": "params_to_tags",
 "displayName": "Items params into tags/descriptions",
@@ -364,19 +488,13 @@ data.gtmOnFailure();
 return;
 }
 
-let purchaseData = null;
-let userData = null;
-
 // Check for purchase event in input data
 if (data && data.events && data.events[0] && data.events[0].name === 'purchase') {
 data.request_type = 'transaction';
-purchaseData = data.events[0].params;
-userData = data.events[0].params.user_data;
 }
 
 // Extract email from possible locations
-var email = (userData && userData.email_address) ||
-data.email ||
+var email = data.email ||
 data.e_mail ||
 data.email_address;
 
@@ -400,14 +518,14 @@ return;
 if (data.request_type === 'transaction') {
 var post_data = {
 transaction: {
-order_id: (purchaseData && purchaseData.transaction_id) || data.order_id,
+order_id: data.order_id,
 email: data.email,
-shop: (purchaseData && purchaseData.domain) || data.order_shop,
-amount: (purchaseData && purchaseData.value) || data.order_amount,
-tax: (purchaseData && purchaseData.tax) || data.order_tax,
-shipping: (purchaseData && purchaseData.shipping) || data.order_shipping,
-city: (purchaseData && purchaseData.user_data && purchaseData.user_data.address && purchaseData.user_data.address.city) || data.order_city,
-country: (purchaseData && purchaseData.user_data && purchaseData.user_data.address && purchaseData.user_data.address.country) || data.order_country,
+shop: data.order_shop,
+amount: data.order_amount,
+tax: data.order_tax,
+shipping: data.order_shipping,
+city: data.order_city,
+country: data.order_country,
 timestamp: getTimestamp() / 1000
 },
 transaction_items: []
@@ -457,9 +575,9 @@ post_data.event.value = JSON.stringify(cart_event_value);
 }
 
 // Convert GA4 product format to Ecomail and populate transaction items
-if (data.request_type === 'transaction' && (data.items || purchaseData.items)) {
+if (data.request_type === 'transaction' && data.items) {
 var categoryKeys = ['item_category', 'item_category2', 'item_category3', 'item_category4', 'item_category5'];
-((purchaseData && purchaseData.items) || (data && data.items)).forEach(function (product, index) {
+(data && data.items).forEach(function (product, index) {
 var combinedCategories = [];
 categoryKeys.forEach(function (key) {
 if (product[key]) combinedCategories.push(product[key]);
@@ -490,7 +608,15 @@ var subscriber_endpoint = data.update_existing ? 'update-subscriber' : 'subscrib
 // Set up API URLs
 var url_api = data.mockServer ? encodeUri(data.debug_server_url) + '/tracker/' + encodeUri(data.request_type) : 'https://api2.ecomailapp.cz/tracker/' + encodeUri(data.request_type);
 
-var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/lists/' + encodeUri(data.list_id) + '/' + encodeUri(subscriber_endpoint) : 'https://api2.ecomailapp.cz/lists/' + encodeUri(data.list_id) + '/' + encodeUri(subscriber_endpoint);
+if (data.language) {
+var listId = data["list_id_" + data.language] && data["list_id_" + data.language].trim() ?
+data["list_id_" + data.language] :
+data.list_id;
+} else {
+var listId = data.list_id;
+}
+
+var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint) : 'https://api2.ecomailapp.cz/lists/' + encodeUri(data.list_id) + '/' + encodeUri(subscriber_endpoint);
 
 // Prepare POST data for subscriber updates
 if (data.list_id && (data.request_type === 'contact' || data.request_type === 'transaction')) {
@@ -500,20 +626,22 @@ tags.push((data.integration_name || 'wpj') + '_newsletter');
 }
 var post_data_subscribe = {
 subscriber_data: {
-name: (userData && userData.address && userData.address.first_name) || data.user_name,
+name: data.user_name,
 email: data.email,
-surname: (userData && userData.address && userData.address.last_name) || data.user_surname,
-city: (userData && userData.address && userData.address.city) || data.user_city,
-street: (userData && userData.address && userData.address.street) || data.user_street,
-zip: (userData && userData.address && userData.address.postal_code) || data.user_zip,
-country: (userData && userData.address && userData.address.country) || data.user_country,
-phone: (userData && userData.phone_number) || data.user_phone,
+surname: data.user_surname,
+city: data.user_city,
+street: data.user_street,
+zip: data.user_zip,
+country: data.user_country,
+phone: data.user_phone,
 source: data.user_source || 'wpj',
+custom_fields: data.custom_fields,
 tags: tags
 },
 trigger_autoresponders: data.trigger_autoresponders ? data.trigger_autoresponders : false,
-update_existing: true,
-resubscribe: data.resubscribe ? data.resubscribe : false
+update_existing: data.update_existing ? data.update_existing : false,
+resubscribe: data.resubscribe ? data.resubscribe : false,
+skip_confirmation: data.skip_confirmation ? data.skip_confirmation : false
 };
 
 // Log and send subscriber data if debug mode is enabled
@@ -553,6 +681,7 @@ logToConsole(statusCode, headers, body);
 data.gtmOnFailure();
 }
 }
+
 
 ___SERVER_PERMISSIONS___
 
@@ -600,7 +729,6 @@ ___SERVER_PERMISSIONS___
 "isRequired": true
 }
 ]
-
 
 ___TESTS___
 
