@@ -2,9 +2,11 @@ homepage: "https://ecomail.cz"
 documentation: "https://support.ecomail.app/en/articles/10067902-ecomail-sgtm-tag"
 versions:
   # Latest version
+  - sha: 02b6e0b27a1462a6dd198cd0e9c1c14287e6c5ac
+    changeNotes: Add support for multistores
+  # Older versions
   - sha: b1b6e28e5af2cacc30f671b34e1ffb6c7bb95fde
     changeNotes: Make tag work with different data structure
-  # Older versions
   - sha: 4620061a1a502bca344455f007b15328b0bfe9b1
     changeNotes: Better email detection
   - sha: 6336f3cc67eb1da600725ea07ced07ec9f12c033
