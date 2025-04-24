@@ -556,10 +556,11 @@ products: []
 data.items.forEach(function (product, index) {
 cart_event_value.data.data.products[index] = {
 productId: product.item_id,
-img_url: product.image_url,
+img_url: product.img_url,
 url: product.url,
 name: product.item_name,
-price: product[data.items_price]
+price: product[data.items_price],
+description: product.description
 };
 if (data.params_to_tags) {
 var product_params_to_description = [];
@@ -568,7 +569,7 @@ if (product[param_column.param_name]) {
 product_params_to_description[param_index] = product[param_column.param_name];
 }
 });
-cart_event_value.data.data.products[index].description = product_params_to_description;
+cart_event_value.data.data.products[index].tags = product_params_to_description;
 }
 });
 post_data.event.value = JSON.stringify(cart_event_value);
