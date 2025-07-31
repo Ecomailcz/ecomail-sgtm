@@ -603,15 +603,15 @@ post_data.transaction_items[index].tags = product_params_to_tags;
 }
 
 // Determine HTTP method and endpoint for subscriber updates
-var method = data.update_existing ? 'PUT' : 'POST';
-var subscriber_endpoint = data.update_existing ? 'update-subscriber' : 'subscribe';
+var method = 'POST';
+var subscriber_endpoint = 'subscribe';
 
 // Set up API URLs
 var url_api = data.mockServer ? encodeUri(data.debug_server_url) + '/tracker/' + encodeUri(data.request_type) : 'https://api2.ecomailapp.cz/tracker/' + encodeUri(data.request_type);
 
 if (data.language) {
 var listId = data["list_id_" + data.language] && data["list_id_" + data.language].trim() ?
-data["list_id_" + data.language] :
+data["list_id_" + data.language].trim() :
 data.list_id;
 } else {
 var listId = data.list_id;
@@ -621,9 +621,9 @@ var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/l
 
 // Prepare POST data for subscriber updates
 if (data.list_id && (data.request_type === 'contact' || data.request_type === 'transaction')) {
-var tags = [data.integration_name || 'wpj'];
+var tags = [data.integration_name || 'WPJ'];
 if (data.newsletter_consent) {
-tags.push((data.integration_name || 'wpj') + '_newsletter');
+tags.push((data.integration_name || 'WPJ') + '_newsletter');
 }
 var post_data_subscribe = {
 subscriber_data: {
