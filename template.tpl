@@ -617,7 +617,7 @@ data.list_id;
 var listId = data.list_id;
 }
 
-var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint) : 'https://api2.ecomailapp.cz/lists/' + encodeUri(data.list_id) + '/' + encodeUri(subscriber_endpoint);
+var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint) : 'https://api2.ecomailapp.cz/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint);
 
 // Prepare POST data for subscriber updates
 if (data.list_id && (data.request_type === 'contact' || data.request_type === 'transaction')) {
