@@ -2,9 +2,11 @@ homepage: "https://ecomail.cz"
 documentation: "https://support.ecomail.app/en/articles/10067902-ecomail-sgtm-tag"
 versions:
   # Latest version
+  - sha: 2c0b99449454fb8f5c574b724b8a25f93fb974e5
+    changeNotes: Typo fix
+  # Older version
   - sha: d3ecb660eb559f5e415fd834c22e337063250f47
     changeNotes: Uppercase tags and different endpoint for subscriber
-  # Older version
   - sha: d63da583e9a69131b5a58e2a34f2eefbb54a4d88
     changeNotes: Fix empty basket data
   - sha: 02b6e0b27a1462a6dd198cd0e9c1c14287e6c5ac
