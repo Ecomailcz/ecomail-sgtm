@@ -586,9 +586,10 @@ if (product[key]) combinedCategories.push(product[key]);
 post_data.transaction_items[index] = {
 code: product.product_code || product.item_id,
 title: product.default_item_name || product.item_name,
-category: product.default_item_category || combinedCategories.join(' | '),
+category: product.default_item_category,
 price: product.price_with_vat || product[data.items_price],
-amount: product.quantity
+amount: product.quantity,
+categories: combinedCategories
 };
 if (data.params_to_tags) {
 var product_params_to_tags = [];
@@ -624,6 +625,9 @@ if (data.list_id && (data.request_type === 'contact' || data.request_type === 't
 var tags = [data.integration_name || 'WPJ'];
 if (data.newsletter_consent) {
 tags.push((data.integration_name || 'WPJ') + '_newsletter');
+}
+if (data.language) {
+tags.push((data.integration_name || 'WPJ') + '_' + data.language);
 }
 var post_data_subscribe = {
 subscriber_data: {
