@@ -584,7 +584,7 @@ categoryKeys.forEach(function (key) {
 if (product[key]) combinedCategories.push(product[key]);
 });
 post_data.transaction_items[index] = {
-code: product.product_code || product.item_id,
+code: product.product_id || product.item_id || product.product_code,
 title: product.default_item_name || product.item_name,
 category: product.default_item_category,
 price: (product.price_with_vat || product[data.items_price]) * (product.quantity !== undefined && product.quantity !== null ? product.quantity : 1),
