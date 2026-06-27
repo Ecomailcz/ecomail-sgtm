@@ -2,9 +2,11 @@ homepage: "https://ecomail.cz"
 documentation: "https://support.ecomail.app/en/articles/10067902-ecomail-sgtm-tag"
 versions:
   # Latest version
+  - sha: 37ea728844ccafd409769a1d163fe3ee178f8d14
+    changeNotes: Update API documentation
+  # Older version
   - sha: 694f6aabc61da1fb3ddc5949481df034b3fe78b6
     changeNotes: Fix transaction item code parsing
-  # Older version
   - sha: bfe1fa00455e03e18d18b281e0673e615608fa18
     changeNotes: Multiply unit price by quantity
   - sha: 2270445339a108202b7c1c72ff7894d262975844
