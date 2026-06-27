@@ -151,7 +151,7 @@ ___TEMPLATE_PARAMETERS___
 "name": "custom_fields",
 "displayName": "Custom fields",
 "simpleValueType": true,
-"help": "JSON of custom fields. See: https://ecomailczv2.docs.apiary.io/#reference/lists/list-subscribe/add-new-subscriber-to-list"
+"help": "JSON of custom fields. See: https://docs.ecomail.cz/api-reference/lists/subscribe"
 },
 {
 "type": "CHECKBOX",
@@ -621,7 +621,7 @@ var listId = data.list_id;
 var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint) : 'https://api2.ecomailapp.cz/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint);
 
 // Prepare POST data for subscriber updates
-if (data.list_id && (data.request_type === 'contact' || data.request_type === 'transaction')) {
+if (listId && (data.request_type === 'contact' || data.request_type === 'transaction')) {
 var tags = [data.integration_name || 'WPJ'];
 if (data.newsletter_consent) {
 tags.push((data.integration_name || 'WPJ') + '_newsletter');
