@@ -649,6 +649,10 @@ resubscribe: data.resubscribe ? data.resubscribe : false,
 skip_confirmation: data.skip_confirmation ? data.skip_confirmation : false
 };
 
+if (data.request_type === 'contact') {
+post_data_subscribe.subscriber_data.status = data.newsletter_consent ? '1' : '2';
+}
+
 // Log and send subscriber data if debug mode is enabled
 if (data.debugMode) {
 logToConsole(JSON.stringify({ 'POST data': post_data_subscribe }));
