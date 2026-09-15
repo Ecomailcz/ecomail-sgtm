@@ -51,6 +51,20 @@ ___TEMPLATE_PARAMETERS___
 "simpleValueType": true
 },
 {
+"type": "CHECKBOX",
+"name": "force_active",
+"checkboxText": "Force active status",
+"simpleValueType": true,
+"help": "Create the contact as active even without a newsletter consent. Use it on a sign up that has to reach the customer, while the newsletter consent is granted separately.",
+"enablingConditions": [
+{
+"paramName": "request_type",
+"paramValue": "contact",
+"type": "EQUALS"
+}
+]
+},
+{
 "type": "SELECT",
 "name": "request_type",
 "displayName": "Request type",
@@ -158,7 +172,7 @@ ___TEMPLATE_PARAMETERS___
 "name": "trigger_autoresponders",
 "checkboxText": "Trigger autoresponders",
 "simpleValueType": true,
-"help": "Trigger automations on subscribe"
+"help": "Trigger automations on subscribe. On a Transaction request this applies to every order, so a welcome automation can fire for a customer who only purchased and did not newly subscribe. Leave it off unless you want that."
 },
 {
 "type": "CHECKBOX",
@@ -244,6 +258,13 @@ ___TEMPLATE_PARAMETERS___
 "displayName": "Value",
 "simpleValueType": true
 }
+],
+"enablingConditions": [
+{
+"paramName": "request_type",
+"paramValue": "events",
+"type": "EQUALS"
+}
 ]
 },
 {
@@ -282,6 +303,13 @@ ___TEMPLATE_PARAMETERS___
 "displayName": "Shipping price",
 "simpleValueType": true
 }
+],
+"enablingConditions": [
+{
+"paramName": "request_type",
+"paramValue": "contact",
+"type": "NOT_EQUALS"
+}
 ]
 },
 {
@@ -303,6 +331,13 @@ ___TEMPLATE_PARAMETERS___
 "displayName": "Object key with price of product",
 "simpleValueType": true,
 "defaultValue": "price"
+}
+],
+"enablingConditions": [
+{
+"paramName": "request_type",
+"paramValue": "contact",
+"type": "NOT_EQUALS"
 }
 ]
 },
@@ -470,6 +505,7 @@ const JSON = require('JSON');
 const encodeUri = require('encodeUri');
 const logToConsole = require('logToConsole');
 const sendHttpRequest = require('sendHttpRequest');
+const Promise = require('Promise');
 const getTimestamp = require('getTimestamp');
 const createRegex = require('createRegex');
 const testRegex = require('testRegex');
@@ -479,6 +515,10 @@ const emailRegex = createRegex('@', 'i');
 if (emailRegex === null) {
 logToConsole('Failed to create regex for email validation.');
 return;
+}
+
+function isFilled(value) {
+return value != null && value !== '';
 }
 
 // Validate API key presence
@@ -544,7 +584,7 @@ value: data.event_value
 }
 
 // Handle "Add to cart" special case
-if (data.event_action === 'Basket' && data.event_label === 'Basket' && data.items) {
+if (data.request_type === 'events' && data.event_action === 'Basket' && data.event_label === 'Basket' && data.items) {
 var cart_event_value = {
 data: {
 data: {
@@ -606,6 +646,7 @@ post_data.transaction_items[index].tags = product_params_to_tags;
 // Determine HTTP method and endpoint for subscriber updates
 var method = 'POST';
 var subscriber_endpoint = 'subscribe';
+var requests = [];
 
 // Set up API URLs
 var url_api = data.mockServer ? encodeUri(data.debug_server_url) + '/tracker/' + encodeUri(data.request_type) : 'https://api2.ecomailapp.cz/tracker/' + encodeUri(data.request_type);
@@ -629,20 +670,23 @@ tags.push((data.integration_name || 'WPJ') + '_newsletter');
 if (data.language) {
 tags.push((data.integration_name || 'WPJ') + '_' + data.language);
 }
-var post_data_subscribe = {
-subscriber_data: {
-name: data.user_name,
+var subscriber_data = {
 email: data.email,
-surname: data.user_surname,
-city: data.user_city,
-street: data.user_street,
-zip: data.user_zip,
-country: data.user_country,
-phone: data.user_phone,
 source: data.user_source || 'wpj',
-custom_fields: data.custom_fields,
 tags: tags
-},
+};
+
+if (isFilled(data.user_name)) { subscriber_data.name = data.user_name; }
+if (isFilled(data.user_surname)) { subscriber_data.surname = data.user_surname; }
+if (isFilled(data.user_city)) { subscriber_data.city = data.user_city; }
+if (isFilled(data.user_street)) { subscriber_data.street = data.user_street; }
+if (isFilled(data.user_zip)) { subscriber_data.zip = data.user_zip; }
+if (isFilled(data.user_country)) { subscriber_data.country = data.user_country; }
+if (isFilled(data.user_phone)) { subscriber_data.phone = data.user_phone; }
+if (isFilled(data.custom_fields)) { subscriber_data.custom_fields = data.custom_fields; }
+
+var post_data_subscribe = {
+subscriber_data: subscriber_data,
 trigger_autoresponders: data.trigger_autoresponders ? data.trigger_autoresponders : false,
 update_existing: data.update_existing ? data.update_existing : false,
 resubscribe: data.resubscribe ? data.resubscribe : false,
@@ -650,18 +694,18 @@ skip_confirmation: data.skip_confirmation ? data.skip_confirmation : false
 };
 
 if (data.request_type === 'contact') {
-post_data_subscribe.subscriber_data.status = data.newsletter_consent ? '1' : '2';
+post_data_subscribe.subscriber_data.status = (data.newsletter_consent || data.force_active) ? '1' : '2';
 }
 
 // Log and send subscriber data if debug mode is enabled
 if (data.debugMode) {
 logToConsole(JSON.stringify({ 'POST data': post_data_subscribe }));
 }
-sendHttpRequest(url_api_subscribe, handleResponse, {
+requests.push(sendHttpRequest(url_api_subscribe, {
 headers: { 'content-type': 'application/json', key: data.api_key },
 method: method,
 timeout: 2000
-}, JSON.stringify(post_data_subscribe));
+}, JSON.stringify(post_data_subscribe)));
 }
 
 // Send transaction or event data to Ecomail
@@ -669,27 +713,38 @@ if (data.request_type === 'transaction' || data.request_type === 'events') {
 if (data.debugMode) {
 logToConsole(JSON.stringify({ 'POST data': post_data }));
 }
-sendHttpRequest(url_api, handleResponse, {
+requests.push(sendHttpRequest(url_api, {
 headers: { 'content-type': 'application/json', key: data.api_key },
 method: 'POST',
 timeout: 2000
-}, JSON.stringify(post_data));
+}, JSON.stringify(post_data)));
 }
 
-// Handle HTTP response
-function handleResponse(statusCode, headers, body) {
-if (statusCode >= 200 && statusCode < 300) {
-if (data.debugMode){
-logToConsole(statusCode, headers, body);
-}
-data.gtmOnSuccess();
-} else {
-if (data.debugMode) {
-logToConsole(statusCode, headers, body);
-}
+if (requests.length === 0) {
+logToConsole('Error: no request to send. Check request_type, and the list ID for a contact request.');
 data.gtmOnFailure();
+return;
 }
+
+Promise.all(requests).then(function (results) {
+var failed = false;
+results.forEach(function (result) {
+if (data.debugMode) {
+logToConsole(result.statusCode, result.headers, result.body);
 }
+if (result.statusCode < 200 || result.statusCode >= 300) {
+failed = true;
+}
+});
+if (failed) {
+data.gtmOnFailure();
+} else {
+data.gtmOnSuccess();
+}
+}).catch(function (error) {
+logToConsole('Error: request failed.', error);
+data.gtmOnFailure();
+});
 
 
 ___SERVER_PERMISSIONS___
@@ -741,8 +796,530 @@ ___SERVER_PERMISSIONS___
 
 ___TESTS___
 
-scenarios: []
+scenarios:
+- name: Sign up - force active without a newsletter consent creates an active contact
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'signup@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      newsletter_consent: false,
+      force_active: true
+    });
 
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.status).isEqualTo('1');
+    assertThat(subscriberData.tags).doesNotContain('WPJ_newsletter');
+- name: Subscribe - a newsletter consent creates an active contact and adds the newsletter tag
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'subscribe@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      newsletter_consent: true,
+      force_active: false
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.status).isEqualTo('1');
+    assertThat(subscriberData.tags).contains('WPJ_newsletter');
+- name: Unsubscribe - neither flag creates an inactive contact
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'unsubscribe@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      newsletter_consent: false,
+      force_active: false
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.status).isEqualTo('2');
+    assertThat(subscriberData.tags).doesNotContain('WPJ_newsletter');
+- name: Both a newsletter consent and force active create an active contact
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'both@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      newsletter_consent: true,
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.status).isEqualTo('1');
+    assertThat(subscriberData.tags).contains('WPJ_newsletter');
+- name: Transaction - force active sets no status, because the status is contact only
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'buyer@example.com',
+      request_type: 'transaction',
+      list_id: '1',
+      newsletter_consent: false,
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.status).isUndefined();
+    assertThat(subscriberData.tags).doesNotContain('WPJ_newsletter');
+
+- name: Failure - a missing api key fails the tag before anything is sent
+  code: |-
+    runCode({
+      email: 'nokey@example.com',
+      request_type: 'contact',
+      list_id: '1'
+    });
+
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('sendHttpRequest').wasNotCalled();
+- name: Failure - a missing email fails the tag before anything is sent
+  code: |-
+    runCode({
+      api_key: 'key',
+      request_type: 'contact',
+      list_id: '1'
+    });
+
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('sendHttpRequest').wasNotCalled();
+- name: Failure - an email without an at sign fails the tag before anything is sent
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'not-an-email',
+      request_type: 'contact',
+      list_id: '1'
+    });
+
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('sendHttpRequest').wasNotCalled();
+- name: Failure - a contact request with no list id has nothing to send and fails the tag
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'nolist@example.com',
+      request_type: 'contact',
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('sendHttpRequest').wasNotCalled();
+- name: Failure - a non 2xx response fails the tag
+  code: |-
+    mock('sendHttpRequest', function (url, options, body) {
+      return {statusCode: 500, headers: {}, body: ''};
+    });
+
+    mockObject('Promise', {
+      all: function (results) {
+        return {
+          then: function (onSuccess) {
+            onSuccess(results);
+
+            return {catch: function () {}};
+          }
+        };
+      }
+    });
+
+    runCode({
+      api_key: 'key',
+      email: 'response@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      newsletter_consent: false,
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasCalled();
+    assertApi('gtmOnSuccess').wasNotCalled();
+- name: Success - a 2xx response succeeds
+  code: |-
+    mockObject('Promise', {
+      all: function (results) {
+        return {
+          then: function (onSuccess) {
+            onSuccess(results);
+
+            return {catch: function () {}};
+          }
+        };
+      }
+    });
+
+    runCode({
+      api_key: 'key',
+      email: 'response@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      newsletter_consent: false,
+      force_active: true
+    });
+
+    assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
+- name: A purchase event overrides the request type to transaction
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'purchase@example.com',
+      request_type: 'events',
+      events: [{name: 'purchase'}],
+      order_id: 'o1'
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(bodyFor('/tracker/transaction')).isDefined();
+    assertThat(bodyFor('/tracker/events')).isUndefined();
+- name: Empty user fields are omitted from the subscriber data and filled ones are sent
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'partial@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true,
+      user_name: 'Jana',
+      user_surname: '',
+      user_city: '',
+      user_phone: '+420123456789'
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.name).isEqualTo('Jana');
+    assertThat(subscriberData.phone).isEqualTo('+420123456789');
+    assertThat(subscriberData.surname).isUndefined();
+    assertThat(subscriberData.city).isUndefined();
+    assertThat(subscriberData.street).isUndefined();
+- name: The email falls back to e_mail
+  code: |-
+    runCode({
+      api_key: 'key',
+      e_mail: 'fallback@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(JSON.parse(bodyFor('/subscribe')).subscriber_data.email).isEqualTo('fallback@example.com');
+- name: The email falls back to email_address
+  code: |-
+    runCode({
+      api_key: 'key',
+      email_address: 'address@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(JSON.parse(bodyFor('/subscribe')).subscriber_data.email).isEqualTo('address@example.com');
+- name: A language with its own list routes the subscribe to that list and adds the language tag
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'sk@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      list_id_sk: '9',
+      language: 'sk',
+      newsletter_consent: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(bodyFor('/lists/9/subscribe')).isDefined();
+
+    const tags = JSON.parse(bodyFor('/subscribe')).subscriber_data.tags;
+
+    assertThat(tags).contains('WPJ_sk');
+    assertThat(tags).contains('WPJ_newsletter');
+- name: A language without its own list falls back to the default list
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'nolang@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      language: 'sk',
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(bodyFor('/lists/1/subscribe')).isDefined();
+    assertThat(JSON.parse(bodyFor('/subscribe')).subscriber_data.tags).contains('WPJ_sk');
+- name: A custom integration name renames the whole tag namespace
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'named@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      integration_name: 'ACME',
+      language: 'cs',
+      newsletter_consent: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const tags = JSON.parse(bodyFor('/subscribe')).subscriber_data.tags;
+
+    assertThat(tags).containsExactly('ACME', 'ACME_newsletter', 'ACME_cs');
+- name: The subscribe flags default to false and the source defaults to wpj
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'defaults@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const payload = JSON.parse(bodyFor('/subscribe'));
+
+    assertThat(payload.trigger_autoresponders).isFalse();
+    assertThat(payload.update_existing).isFalse();
+    assertThat(payload.resubscribe).isFalse();
+    assertThat(payload.skip_confirmation).isFalse();
+    assertThat(payload.subscriber_data.source).isEqualTo('wpj');
+- name: The subscribe flags and the source pass through when set
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'flags@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true,
+      user_source: 'custom-source',
+      trigger_autoresponders: true,
+      update_existing: true,
+      resubscribe: true,
+      skip_confirmation: true
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const payload = JSON.parse(bodyFor('/subscribe'));
+
+    assertThat(payload.trigger_autoresponders).isTrue();
+    assertThat(payload.update_existing).isTrue();
+    assertThat(payload.resubscribe).isTrue();
+    assertThat(payload.skip_confirmation).isTrue();
+    assertThat(payload.subscriber_data.source).isEqualTo('custom-source');
+- name: Transaction items multiply the unit price by the quantity and combine the categories
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'items@example.com',
+      request_type: 'transaction',
+      order_id: 'o1',
+      items: [{
+        product_id: 'p1',
+        item_name: 'Soap',
+        price_with_vat: 100,
+        quantity: 3,
+        item_category: 'Bath',
+        item_category2: 'Soap',
+        default_item_category: 'Bath'
+      }]
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const item = JSON.parse(bodyFor('/tracker/transaction')).transaction_items[0];
+
+    assertThat(item.code).isEqualTo('p1');
+    assertThat(item.price).isEqualTo(300);
+    assertThat(item.amount).isEqualTo(3);
+    assertThat(item.categories).containsExactly('Bath', 'Soap');
+- name: A transaction item without a quantity keeps the unit price
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'noqty@example.com',
+      request_type: 'transaction',
+      order_id: 'o1',
+      items: [{item_id: 'p2', item_name: 'Towel', price_with_vat: 250}]
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const item = JSON.parse(bodyFor('/tracker/transaction')).transaction_items[0];
+
+    assertThat(item.code).isEqualTo('p2');
+    assertThat(item.price).isEqualTo(250);
+- name: A basket event builds the cart payload into the event value
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'basket@example.com',
+      request_type: 'events',
+      event_action: 'Basket',
+      event_label: 'Basket',
+      items_price: 'price',
+      items: [{item_id: 'p1', item_name: 'Soap', price: 100, url: 'https://shop.test/p1'}]
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const value = JSON.parse(JSON.parse(bodyFor('/tracker/events')).event.value);
+
+    assertThat(value.data.data.action).isEqualTo('Basket');
+    assertThat(value.data.data.products[0].productId).isEqualTo('p1');
+    assertThat(value.data.data.products[0].price).isEqualTo(100);
+- name: The mock server replaces the api host
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'mock@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true,
+      mockServer: true,
+      debug_server_url: 'https://mock.test'
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(bodyFor('https://mock.test/lists/1/subscribe')).isDefined();
+- name: A transaction with a list sends both the tracker and the subscribe request
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'both@example.com',
+      request_type: 'transaction',
+      order_id: 'o1',
+      list_id: '1'
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    assertThat(requests).hasLength(2);
+    assertThat(bodyFor('/tracker/transaction')).isDefined();
+    assertThat(bodyFor('/lists/1/subscribe')).isDefined();
+- name: Null user fields are omitted from the subscriber data
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'nulls@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true,
+      user_name: null,
+      user_city: null,
+      user_zip: null,
+      custom_fields: null
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.name).isUndefined();
+    assertThat(subscriberData.city).isUndefined();
+    assertThat(subscriberData.zip).isUndefined();
+    assertThat(subscriberData.custom_fields).isUndefined();
+- name: Every filled user field including the custom fields is sent
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'full@example.com',
+      request_type: 'contact',
+      list_id: '1',
+      force_active: true,
+      user_name: 'Jana',
+      user_surname: 'Novakova',
+      user_city: 'Praha',
+      user_street: 'Dlouha 1',
+      user_zip: '11000',
+      user_country: 'CZ',
+      user_phone: '+420123456789',
+      custom_fields: {loyalty_id: 'A1'}
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const subscriberData = JSON.parse(bodyFor('/subscribe')).subscriber_data;
+
+    assertThat(subscriberData.name).isEqualTo('Jana');
+    assertThat(subscriberData.surname).isEqualTo('Novakova');
+    assertThat(subscriberData.city).isEqualTo('Praha');
+    assertThat(subscriberData.street).isEqualTo('Dlouha 1');
+    assertThat(subscriberData.zip).isEqualTo('11000');
+    assertThat(subscriberData.country).isEqualTo('CZ');
+    assertThat(subscriberData.phone).isEqualTo('+420123456789');
+    assertThat(subscriberData.custom_fields.loyalty_id).isEqualTo('A1');
+- name: A transaction keeps the basket labels out of the payload and does not break
+  code: |-
+    runCode({
+      api_key: 'key',
+      email: 'basket-transaction@example.com',
+      request_type: 'transaction',
+      order_id: 'o1',
+      event_action: 'Basket',
+      event_label: 'Basket',
+      items_price: 'price',
+      items: [{item_id: 'p1', item_name: 'Soap', price: 100}]
+    });
+
+    assertApi('gtmOnFailure').wasNotCalled();
+
+    const payload = JSON.parse(bodyFor('/tracker/transaction'));
+
+    assertThat(payload.event).isUndefined();
+    assertThat(payload.transaction.order_id).isEqualTo('o1');
+setup: |-
+  const JSON = require('JSON');
+
+  let requests = [];
+
+  mock('sendHttpRequest', function (url, options, body) {
+    requests.push({url: url, body: body});
+
+    return {statusCode: 200, headers: {}, body: ''};
+  });
+
+  function bodyFor(part) {
+    let found;
+    requests.forEach(function (request) {
+      if (request.url.indexOf(part) !== -1) {
+        found = request.body;
+      }
+    });
+
+    return found;
+  }
 
 ___NOTES___
 
