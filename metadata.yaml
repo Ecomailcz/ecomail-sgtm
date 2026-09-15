@@ -2,9 +2,11 @@ homepage: "https://ecomail.cz"
 documentation: "https://support.ecomail.app/en/articles/10067902-ecomail-sgtm-tag"
 versions:
   # Latest version
+  - sha: c1de93c8fe70033407ded8af0471fc795d6ac6d1
+    changeNotes: Add force active status option and stop empty fields from overwriting existing contact data
+  # Older version
   - sha: aba799f061c3ef505e5c1c1ace522d51268bbd9e
     changeNotes: Fix subscriber status
-  # Older version
   - sha: 37ea728844ccafd409769a1d163fe3ee178f8d14
     changeNotes: Update API documentation
   - sha: 694f6aabc61da1fb3ddc5949481df034b3fe78b6
