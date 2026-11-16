@@ -661,6 +661,8 @@ var listId = data.list_id;
 
 var url_api_subscribe = data.mockServer ? encodeUri(data.debug_server_url) + '/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint) : 'https://api2.ecomailapp.cz/lists/' + encodeUri(listId) + '/' + encodeUri(subscriber_endpoint);
 
+var subscribeRequest = null;
+
 // Prepare POST data for subscriber updates
 if (listId && (data.request_type === 'contact' || data.request_type === 'transaction')) {
 var tags = [data.integration_name || 'WPJ'];
@@ -701,11 +703,12 @@ post_data_subscribe.subscriber_data.status = (data.newsletter_consent || data.fo
 if (data.debugMode) {
 logToConsole(JSON.stringify({ 'POST data': post_data_subscribe }));
 }
-requests.push(sendHttpRequest(url_api_subscribe, {
+subscribeRequest = sendHttpRequest(url_api_subscribe, {
 headers: { 'content-type': 'application/json', key: data.api_key },
 method: method,
 timeout: 2000
-}, JSON.stringify(post_data_subscribe)));
+}, JSON.stringify(post_data_subscribe));
+requests.push(subscribeRequest);
 }
 
 // Send transaction or event data to Ecomail
@@ -713,11 +716,15 @@ if (data.request_type === 'transaction' || data.request_type === 'events') {
 if (data.debugMode) {
 logToConsole(JSON.stringify({ 'POST data': post_data }));
 }
-requests.push(sendHttpRequest(url_api, {
+var sendTrackerRequest = function () {
+return sendHttpRequest(url_api, {
 headers: { 'content-type': 'application/json', key: data.api_key },
 method: 'POST',
 timeout: 2000
-}, JSON.stringify(post_data)));
+}, JSON.stringify(post_data));
+};
+// Send the transaction after the subscribe, so an order automation finds the contact on its list
+requests.push(subscribeRequest ? subscribeRequest.then(sendTrackerRequest, sendTrackerRequest) : sendTrackerRequest());
 }
 
 if (requests.length === 0) {
@@ -1226,8 +1233,106 @@ scenarios:
     assertApi('gtmOnFailure').wasNotCalled();
 
     assertThat(requests).hasLength(2);
+    assertThat(requests[0].url).contains('/lists/1/subscribe');
+    assertThat(requests[1].url).contains('/tracker/transaction');
+- name: A transaction with a list sends the transaction only after the subscribe has finished
+  code: |-
+    let subscribeOutcome = null;
+    let subscribeListeners = [];
+
+    function settleSubscribe(succeeded, value) {
+      subscribeOutcome = {succeeded: succeeded, value: value};
+      subscribeListeners.forEach(function (listener) {
+        if (succeeded) {
+          listener.onSuccess(value);
+        } else {
+          listener.onFailure(value);
+        }
+      });
+    }
+
+    mock('sendHttpRequest', function (url, options, body) {
+      requests.push({url: url, body: body});
+
+      if (url.indexOf('/subscribe') !== -1) {
+        return {
+          then: function (onSuccess, onFailure) {
+            if (subscribeOutcome) {
+              return subscribeOutcome.succeeded ? onSuccess(subscribeOutcome.value) : onFailure(subscribeOutcome.value);
+            }
+
+            subscribeListeners.push({onSuccess: onSuccess, onFailure: onFailure});
+
+            return {statusCode: 200, headers: {}, body: ''};
+          }
+        };
+      }
+
+      return {statusCode: 200, headers: {}, body: ''};
+    });
+
+    runCode({
+      api_key: 'key',
+      email: 'order@example.com',
+      request_type: 'transaction',
+      order_id: 'o1',
+      list_id: '1'
+    });
+
+    assertThat(requests).hasLength(1);
+    assertThat(bodyFor('/tracker/transaction')).isUndefined();
+
+    settleSubscribe(true, {statusCode: 200, headers: {}, body: ''});
+
+    assertThat(requests).hasLength(2);
     assertThat(bodyFor('/tracker/transaction')).isDefined();
-    assertThat(bodyFor('/lists/1/subscribe')).isDefined();
+- name: A transaction is still sent when the subscribe fails
+  code: |-
+    let subscribeOutcome = null;
+    let subscribeListeners = [];
+
+    function settleSubscribe(succeeded, value) {
+      subscribeOutcome = {succeeded: succeeded, value: value};
+      subscribeListeners.forEach(function (listener) {
+        if (succeeded) {
+          listener.onSuccess(value);
+        } else {
+          listener.onFailure(value);
+        }
+      });
+    }
+
+    mock('sendHttpRequest', function (url, options, body) {
+      requests.push({url: url, body: body});
+
+      if (url.indexOf('/subscribe') !== -1) {
+        return {
+          then: function (onSuccess, onFailure) {
+            if (subscribeOutcome) {
+              return subscribeOutcome.succeeded ? onSuccess(subscribeOutcome.value) : onFailure(subscribeOutcome.value);
+            }
+
+            subscribeListeners.push({onSuccess: onSuccess, onFailure: onFailure});
+
+            return {statusCode: 200, headers: {}, body: ''};
+          }
+        };
+      }
+
+      return {statusCode: 200, headers: {}, body: ''};
+    });
+
+    runCode({
+      api_key: 'key',
+      email: 'order-failed-subscribe@example.com',
+      request_type: 'transaction',
+      order_id: 'o1',
+      list_id: '1'
+    });
+
+    settleSubscribe(false, {reason: 'timed_out'});
+
+    assertThat(bodyFor('/tracker/transaction')).isDefined();
 - name: Null user fields are omitted from the subscriber data
   code: |-
     runCode({
@@ -1307,7 +1412,14 @@ setup: |-
   mock('sendHttpRequest', function (url, options, body) {
     requests.push({url: url, body: body});
 
-    return {statusCode: 200, headers: {}, body: ''};
+    return {
+      statusCode: 200,
+      headers: {},
+      body: '',
+      then: function (onSuccess) {
+        return onSuccess({statusCode: 200, headers: {}, body: ''});
+      }
+    };
   });
 
   function bodyFor(part) {
